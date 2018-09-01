@@ -9,6 +9,7 @@ import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
+import co.hellocode.micro.NewPost.NewPostActivity
 import co.hellocode.micro.Utils.NEW_POST_REQUEST_CODE
 import co.hellocode.micro.Utils.PREFS_FILENAME
 import co.hellocode.micro.Utils.TOKEN
@@ -20,11 +21,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.baselayout_timeline.*
 import org.json.JSONArray
 import org.json.JSONObject
-import java.text.SimpleDateFormat
 import java.util.*
 
 
-open class BaseTimelineActivity : AppCompatActivity() {
+abstract class BaseTimelineActivity : AppCompatActivity() {
 
     private lateinit var linearLayoutManager: LinearLayoutManager
     open lateinit var adapter: TimelineRecyclerAdapter
@@ -35,13 +35,14 @@ open class BaseTimelineActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_timeline)
+        setContentView(contentView())
         setSupportActionBar(toolbar)
         supportActionBar?.title = title
         this.linearLayoutManager = LinearLayoutManager(this)
         recyclerView.layoutManager = this.linearLayoutManager
         this.adapter = TimelineRecyclerAdapter(this.posts)
         recyclerView.adapter = this.adapter
+        Log.i("BaseTimeline", "recycler: $recyclerView")
 
         fab.setOnClickListener {
             val intent = Intent(this, NewPostActivity::class.java)
@@ -51,6 +52,10 @@ open class BaseTimelineActivity : AppCompatActivity() {
         this.refresh = refresher
         this.refresh.setOnRefreshListener { refresh() }
         initialLoad()
+    }
+
+    open fun contentView() : Int {
+        return R.layout.activity_timeline
     }
 
     open fun initialLoad() {
@@ -82,9 +87,10 @@ open class BaseTimelineActivity : AppCompatActivity() {
                 this.url,
                 null,
                 Response.Listener<JSONObject> { response ->
-                    Log.i("MainActivity", "resp: $response")
+//                    Log.i("MainActivity", "resp: $response")
                     val items = response["items"] as JSONArray
                     createPosts(items)
+                    getRequestComplete(response)
                     this.adapter.notifyDataSetChanged()
                     this.refresh.isRefreshing = false
                 },
@@ -104,6 +110,10 @@ open class BaseTimelineActivity : AppCompatActivity() {
         }
         val queue = Volley.newRequestQueue(this)
         queue.add(rq)
+    }
+
+    open fun getRequestComplete(response: JSONObject) {
+
     }
 
     open fun createPosts(items: JSONArray) {
